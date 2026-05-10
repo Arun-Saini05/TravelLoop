@@ -6,6 +6,13 @@ import { TripGroupSection } from "@/app/dashboard/trips/trip-group-section";
 import { TripsControls } from "@/app/dashboard/trips/trips-controls";
 import type { TripsQueryState, TripViewModel } from "@/app/dashboard/trips/types";
 import {
+  AppHeader,
+  buttonClasses,
+  Card,
+  EmptyState,
+  PageContainer,
+} from "@/components/ui";
+import {
   calculateDurationDays,
   formatDateRange,
   groupTripsByLifecycle,
@@ -279,25 +286,6 @@ async function fetchTrips(where: Prisma.TripWhereInput, currentUserId: string) {
   });
 }
 
-function HeaderActions() {
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
-      >
-        Back to Dashboard
-      </Link>
-      <Link
-        href="/dashboard/trips/new"
-        className="inline-flex items-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
-      >
-        Create Trip
-      </Link>
-    </div>
-  );
-}
-
 export default async function TripsPage({ searchParams }: TripsPageProps) {
   const session = await requireSession();
   const resolvedSearchParams = await searchParams;
@@ -319,75 +307,81 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
   const noMatches = !noTripsAtAll && sortedTrips.length === 0;
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-sm font-medium text-teal-700">Current User Trips</p>
-              <h1 className="mt-1 text-2xl font-semibold text-zinc-900 sm:text-3xl">
-                Manage your trips in one place
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-zinc-600 sm:text-base">
-                Search, filter, and track the status of trips you own or collaborate on.
-                Keep an eye on booking progress, budget usage, and key planning metadata.
-              </p>
-            </div>
-            <HeaderActions />
-          </div>
-        </header>
+    <main className="min-h-screen bg-app">
+      <AppHeader
+        width="wide"
+        crumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "My trips" },
+        ]}
+        actions={
+          <Link
+            href="/trips/new"
+            className={buttonClasses({ variant: "primary", size: "sm" })}
+          >
+            + Create trip
+          </Link>
+        }
+      />
 
-        <TripsControls
-          query={query}
-          totalVisibleTrips={totalVisibleTrips}
-          filteredTrips={sortedTrips.length}
-        />
+      <PageContainer width="wide">
+        <Card padded className="mb-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal-700">
+            Your trips
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+            Manage every plan in one place
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-zinc-600">
+            Search, filter, and track the status of trips you own or collaborate on.
+            Keep an eye on booking progress, budget usage, and key planning metadata.
+          </p>
+        </Card>
+
+        <div className="mb-6">
+          <TripsControls
+            query={query}
+            totalVisibleTrips={totalVisibleTrips}
+            filteredTrips={sortedTrips.length}
+          />
+        </div>
 
         {noTripsAtAll ? (
-          <section
-            aria-labelledby="empty-trips-title"
-            className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm"
-          >
-            <h2 id="empty-trips-title" className="text-xl font-semibold text-zinc-900">
-              No trips yet
-            </h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-600 sm:text-base">
-              You haven&apos;t created or joined any trips yet. Start by creating your first
-              trip itinerary.
-            </p>
-            <Link
-              href="/dashboard/trips/new"
-              className="mt-5 inline-flex items-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
-            >
-              Create your first trip
-            </Link>
-          </section>
+          <EmptyState
+            icon="🧭"
+            title="No trips yet"
+            description="You haven't created or joined any trips yet. Start by creating your first itinerary."
+            action={
+              <Link
+                href="/trips/new"
+                className={buttonClasses({ variant: "brand", size: "md" })}
+              >
+                + Create your first trip
+              </Link>
+            }
+          />
         ) : noMatches ? (
-          <section
-            aria-labelledby="empty-search-title"
-            className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm"
-          >
-            <h2 id="empty-search-title" className="text-xl font-semibold text-zinc-900">
-              No trips match your filters
-            </h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-600 sm:text-base">
-              Try changing your search terms or filters to find matching trips.
-            </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/dashboard/trips"
-                className="inline-flex items-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
-              >
-                Clear Filters
-              </Link>
-              <Link
-                href="/dashboard/trips/new"
-                className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
-              >
-                Create Trip
-              </Link>
-            </div>
-          </section>
+          <EmptyState
+            icon="🔍"
+            title="No trips match your filters"
+            description="Try changing your search terms or filters to find matching trips."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  href="/dashboard/trips"
+                  className={buttonClasses({ variant: "primary", size: "md" })}
+                >
+                  Clear filters
+                </Link>
+                <Link
+                  href="/trips/new"
+                  className={buttonClasses({ variant: "secondary", size: "md" })}
+                >
+                  + Create trip
+                </Link>
+              </div>
+            }
+          />
         ) : (
           <div className="space-y-8">
             <TripGroupSection
@@ -412,7 +406,7 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
             />
           </div>
         )}
-      </div>
+      </PageContainer>
     </main>
   );
 }
