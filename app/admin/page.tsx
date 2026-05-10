@@ -56,8 +56,8 @@ export default async function AdminPage() {
 
     db.user.findMany({
       orderBy: { createdAt: "desc" },
-      take: 8,
-      select: { id: true, username: true, email: true, role: true, isActive: true, createdAt: true },
+      take: 100,
+      select: { id: true, username: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true },
     }),
 
     db.trip.groupBy({ by: ["status"], _count: { id: true } }),

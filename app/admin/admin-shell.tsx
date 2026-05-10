@@ -13,7 +13,7 @@ type AdminData = {
   typeMap: Record<string, number>;
   topCities: { name: string; countryCode: string; count: number }[];
   topActivities: { name: string; type: string; count: number }[];
-  recentUsers: { id: string; username: string; email: string; role: string; isActive: boolean; createdAt: string }[];
+  recentUsers: { id: string; username: string; email: string; firstName: string | null; lastName: string | null; role: string; isActive: boolean; createdAt: string }[];
   recentTrips: { id: string; name: string; status: string; visibility: string; createdAt: string; owner: { username: string }; _count: { stops: number } }[];
 };
 
@@ -149,6 +149,12 @@ function fmt(iso: string) {
 export function AdminShell({ data, currentUserId }: { data: AdminData; currentUserId: string }) {
   const [tab, setTab] = useState<"overview" | "users" | "cities" | "activities">("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // User CRUD states
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminData["recentUsers"][0] | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const tabs = [
     { key: "overview", label: "Overview & Analytics" },
@@ -160,8 +166,48 @@ export function AdminShell({ data, currentUserId }: { data: AdminData; currentUs
   const typeSlices = Object.entries(data.typeMap).map(([k, v]) => ({ label: k, value: v })).sort((a, b) => b.value - a.value);
 
   const filteredUsers = data.recentUsers.filter(
-    (u) => u.username.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (u) => u.username.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (u.firstName && u.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+           (u.lastName && u.lastName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const handleCreateOrUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    const fd = new FormData(e.currentTarget);
+    const role = fd.get("role") as string;
+    const isActive = fd.get("isActive") === "true";
+    const username = fd.get("username") as string;
+    const email = fd.get("email") as string;
+    const firstName = fd.get("firstName") as string;
+    const lastName = fd.get("lastName") as string;
+
+    try {
+      const { adminCreateUser, adminUpdateUser } = await import("@/actions/admin");
+      if (editingUser) {
+        await adminUpdateUser(editingUser.id, { role: role as "USER" | "ADMIN", isActive, username, email, firstName, lastName });
+      } else {
+        await adminCreateUser({ role: role as "USER" | "ADMIN", username, email, firstName, lastName, passwordHash: "dummy" });
+      }
+      setIsUserModalOpen(false);
+      setEditingUser(null);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleBan = async (user: AdminData["recentUsers"][0]) => {
+    try {
+      const { adminUpdateUser } = await import("@/actions/admin");
+      await adminUpdateUser(user.id, { isActive: !user.isActive });
+    } catch (err: any) {
+      alert("Failed to update user status: " + err.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-teal-500/30">
@@ -326,8 +372,16 @@ export function AdminShell({ data, currentUserId }: { data: AdminData; currentUs
               {tab === "users" && (
                 <div className="space-y-6 bg-white border border-slate-200 shadow-sm rounded-3xl p-6 sm:p-8">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-slate-900">Manage Users</h2>
-                    <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600 border border-slate-200">{data.stats.totalUsers} total</span>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl font-bold text-slate-900">Manage Users</h2>
+                      <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600 border border-slate-200">{data.stats.totalUsers} total</span>
+                    </div>
+                    <button 
+                      onClick={() => { setEditingUser(null); setIsUserModalOpen(true); }}
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
+                    >
+                      + Create User
+                    </button>
                   </div>
                   <div className="overflow-x-auto rounded-2xl border border-slate-200">
                     <table className="w-full text-sm text-left whitespace-nowrap">
@@ -336,19 +390,27 @@ export function AdminShell({ data, currentUserId }: { data: AdminData; currentUs
                           <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">User</th>
                           <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Email</th>
                           <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Role</th>
-                          <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Joined</th>
+                          <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Status</th>
+                          <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {filteredUsers.length === 0 ? (
-                          <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500 italic">No users found.</td></tr>
+                          <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500 italic">No users found.</td></tr>
                         ) : (
                           filteredUsers.map((u) => (
                             <tr key={u.id} className="hover:bg-slate-50 transition-colors group">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center text-xs font-bold text-teal-700 shadow-inner border border-teal-200">{u.username.charAt(0).toUpperCase()}</div>
-                                  <span className="font-semibold text-slate-800">@{u.username}</span>
+                                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shadow-inner border ${u.isActive ? "bg-teal-100 text-teal-700 border-teal-200" : "bg-red-100 text-red-700 border-red-200"}`}>
+                                    {u.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold text-slate-800">@{u.username}</span>
+                                    {(u.firstName || u.lastName) && (
+                                      <span className="text-xs text-slate-500">{u.firstName} {u.lastName}</span>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-slate-500">{u.email}</td>
@@ -359,7 +421,33 @@ export function AdminShell({ data, currentUserId }: { data: AdminData; currentUs
                                     : "bg-slate-50 text-slate-500 border-slate-200"
                                 }`}>{u.role}</span>
                               </td>
-                              <td className="px-6 py-4 text-slate-400 tabular-nums">{fmt(u.createdAt)}</td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${
+                                  u.isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
+                                }`}>
+                                  {u.isActive ? "Active" : "Banned"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex justify-end items-center gap-2">
+                                  <button 
+                                    onClick={() => { setEditingUser(u); setIsUserModalOpen(true); }}
+                                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-md border border-slate-200 hover:border-teal-200 transition-all"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    onClick={() => handleToggleBan(u)}
+                                    className={`px-3 py-1.5 text-xs font-semibold rounded-md border transition-all ${
+                                      u.isActive 
+                                        ? "text-red-600 hover:bg-red-50 border-slate-200 hover:border-red-200" 
+                                        : "text-green-600 hover:bg-green-50 border-slate-200 hover:border-green-200"
+                                    }`}
+                                  >
+                                    {u.isActive ? "Ban" : "Unban"}
+                                  </button>
+                                </div>
+                              </td>
                             </tr>
                           ))
                         )}
@@ -404,6 +492,87 @@ export function AdminShell({ data, currentUserId }: { data: AdminData; currentUs
         </div>
         
       </main>
+
+      {/* User CRUD Modal */}
+      <AnimatePresence>
+        {isUserModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 className="text-xl font-bold text-slate-900">
+                  {editingUser ? "Edit User" : "Create New User"}
+                </h3>
+                <button 
+                  onClick={() => setIsUserModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+              <form onSubmit={handleCreateOrUpdateUser} className="p-6 flex flex-col gap-4">
+                {errorMsg && (
+                  <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
+                    {errorMsg}
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-slate-700">First Name</label>
+                    <input name="firstName" defaultValue={editingUser?.firstName || ""} className="h-10 px-3 rounded-lg border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm shadow-sm" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Last Name</label>
+                    <input name="lastName" defaultValue={editingUser?.lastName || ""} className="h-10 px-3 rounded-lg border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm shadow-sm" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Username <span className="text-red-500">*</span></label>
+                  <input required name="username" defaultValue={editingUser?.username || ""} className="h-10 px-3 rounded-lg border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm shadow-sm" />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Email Address <span className="text-red-500">*</span></label>
+                  <input required type="email" name="email" defaultValue={editingUser?.email || ""} className="h-10 px-3 rounded-lg border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm shadow-sm" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Role</label>
+                    <select name="role" defaultValue={editingUser?.role || "USER"} className="h-10 px-3 rounded-lg border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm shadow-sm bg-white">
+                      <option value="USER">User</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Status</label>
+                    <select name="isActive" defaultValue={editingUser ? (editingUser.isActive ? "true" : "false") : "true"} className="h-10 px-3 rounded-lg border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm shadow-sm bg-white">
+                      <option value="true">Active</option>
+                      <option value="false">Banned</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end gap-3">
+                  <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    Cancel
+                  </button>
+                  <button disabled={isSubmitting} type="submit" className="px-5 py-2 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors disabled:opacity-50">
+                    {isSubmitting ? "Saving..." : "Save User"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
