@@ -8,6 +8,8 @@ type PlaceSuggestion = {
   label: string;
   mainText: string;
   secondaryText: string | null;
+  // e.g. "city", "state", "country", "region", "other"
+  placeType: string;
 };
 
 type ActivitySuggestion = {
@@ -65,6 +67,7 @@ async function fetchPlaceSuggestions(query: string, apiKey: string): Promise<Pla
           mainText?: { text?: string };
           secondaryText?: { text?: string };
         };
+        types?: string[];
       };
     }>;
   };
@@ -77,11 +80,12 @@ async function fetchPlaceSuggestions(query: string, apiKey: string): Promise<Pla
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask":
-          "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text",
+          "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text,suggestions.placePrediction.types",
       },
       body: JSON.stringify({
         input: query,
-        includedPrimaryTypes: ["(cities)"],
+        // No includedPrimaryTypes — allow cities, states, countries, regions
+        // No includedPrimaryTypes: returns all place types (cities, states, countries, regions)
       }),
     }
   );
@@ -93,16 +97,29 @@ async function fetchPlaceSuggestions(query: string, apiKey: string): Promise<Pla
       const label = prediction?.text?.text;
       const mainText = prediction?.structuredFormat?.mainText?.text ?? label;
       const secondaryText = prediction?.structuredFormat?.secondaryText?.text ?? null;
+      const types = prediction?.types ?? [];
 
       if (!placeId || !label || !mainText) {
         return null;
       }
+
+      // Derive a human-readable type label
+      let placeType = "place";
+      if (types.includes("country")) placeType = "country";
+      else if (types.includes("administrative_area_level_1")) placeType = "state";
+      else if (types.includes("administrative_area_level_2")) placeType = "region";
+      else if (
+        types.includes("locality") ||
+        types.includes("sublocality") ||
+        types.some((t: string) => t === "(cities)")
+      ) placeType = "city";
 
       return {
         placeId,
         label,
         mainText,
         secondaryText,
+        placeType,
       } satisfies PlaceSuggestion;
     })
     .filter((value): value is PlaceSuggestion => value !== null);
@@ -186,23 +203,36 @@ async function fetchPlaceDetails(placeId: string, apiKey: string): Promise<Place
   );
 
   const components = data.addressComponents ?? [];
-  const countryComponent = components.find((component) =>
-    component.types?.includes("country")
-  );
+
+  const countryComponent = components.find((c) => c.types?.includes("country"));
+
+  // For a country-level place, the place itself IS the country
+  const isCountryLevel = components.length === 1 && countryComponent != null;
+
   const regionComponent =
-    components.find((component) =>
-      component.types?.includes("administrative_area_level_1")
-    ) ??
-    components.find((component) => component.types?.includes("locality")) ??
+    components.find((c) => c.types?.includes("administrative_area_level_1")) ??
+    components.find((c) => c.types?.includes("administrative_area_level_2")) ??
+    components.find((c) => c.types?.includes("locality")) ??
     null;
+
+  // When the searched place IS a state/province, use it as both name and region
+  const displayName = data.displayName?.text ?? "";
+  const resolvedCountryCode =
+    isCountryLevel
+      ? (countryComponent?.shortText?.toUpperCase() ?? null)
+      : (countryComponent?.shortText?.toUpperCase() ?? "ZZ");
+  const resolvedCountryName =
+    isCountryLevel
+      ? (countryComponent?.longText ?? displayName)
+      : (countryComponent?.longText ?? null);
 
   return {
     placeId: data.id ?? placeId,
-    name: data.displayName?.text ?? "",
+    name: displayName,
     address: data.formattedAddress ?? null,
-    region: regionComponent?.longText ?? null,
-    countryCode: countryComponent?.shortText?.toUpperCase() ?? null,
-    countryName: countryComponent?.longText ?? null,
+    region: regionComponent?.longText ?? (isCountryLevel ? null : displayName),
+    countryCode: resolvedCountryCode,
+    countryName: resolvedCountryName,
     latitude: data.location?.latitude ?? null,
     longitude: data.location?.longitude ?? null,
   };

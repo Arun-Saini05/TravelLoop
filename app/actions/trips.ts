@@ -155,5 +155,5 @@ export async function createTrip(
   });
 
   revalidatePath("/dashboard");
-  redirect(`/dashboard?createdTrip=${trip.id}`);
+  redirect(`/trips/${trip.id}/itinerary`);
 }
