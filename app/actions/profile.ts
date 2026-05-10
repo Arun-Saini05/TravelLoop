@@ -54,3 +54,30 @@ export async function uploadProfilePhoto(formData: FormData) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to upload photo' };
   }
 }
+
+export async function updateProfileDetails(formData: FormData) {
+  try {
+    const session = await requireSession();
+    if (!session || !session.userId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const firstName = formData.get('firstName')?.toString().trim() || null;
+    const lastName = formData.get('lastName')?.toString().trim() || null;
+
+    await db.user.update({
+      where: { id: session.userId },
+      data: {
+        firstName,
+        lastName,
+      },
+    });
+
+    revalidatePath('/profile');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error: unknown) {
+    console.error('Error updating profile details:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update details' };
+  }
+}

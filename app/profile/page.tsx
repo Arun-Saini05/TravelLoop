@@ -5,6 +5,7 @@ import { UserMenu } from '@/app/dashboard/user-menu';
 import { db } from '@/lib/db';
 import { requireSession } from '@/lib/session';
 import { PhotoUpload } from './photo-upload';
+import { EditProfileModal } from './edit-profile-modal';
 import styles from './Profile.module.css';
 
 function formatDate(date: Date): string {
@@ -219,15 +220,12 @@ export default async function ProfilePage() {
                 <Link href='/trips/new' className={styles.actionBtnSecondary}>
                   Plan a Trip
                 </Link>
-                <button
-                  type='button'
-                  className={styles.actionBtnGhost}
-                  aria-disabled='true'
-                  disabled
-                  title='Profile editing will be available soon'
-                >
-                  Edit Details (Soon)
-                </button>
+                <EditProfileModal 
+                  initialFirstName={user?.firstName || null} 
+                  initialLastName={user?.lastName || null} 
+                  initialEmail={userEmail}
+                  triggerClassName={styles.actionBtnGhost}
+                />
               </div>
             </div>
           </div>
