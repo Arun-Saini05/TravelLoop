@@ -21,9 +21,9 @@ const INITIAL_DATA: ChecklistCategory[] = [
     id: "cat-1",
     name: "Documents",
     items: [
-      { id: "doc-1", label: "Passport", isPacked: true },
-      { id: "doc-2", label: "Flight Tickets (printed)", isPacked: true },
-      { id: "doc-3", label: "Travel insurance", isPacked: true },
+      { id: "doc-1", label: "Passport", isPacked: false },
+      { id: "doc-2", label: "Flight Tickets (printed)", isPacked: false },
+      { id: "doc-3", label: "Travel insurance", isPacked: false },
       { id: "doc-4", label: "hotel booking confirmation", isPacked: false },
     ],
   },
@@ -31,7 +31,7 @@ const INITIAL_DATA: ChecklistCategory[] = [
     id: "cat-2",
     name: "Clothing",
     items: [
-      { id: "clo-1", label: "Casual Shirts", isPacked: true },
+      { id: "clo-1", label: "Casual Shirts", isPacked: false },
       { id: "clo-2", label: "Trousers / jeans", isPacked: false },
       { id: "clo-3", label: "Comfortable walking shoes", isPacked: false },
       { id: "clo-4", label: "light jacket / windbreaker", isPacked: false },
@@ -41,10 +41,10 @@ const INITIAL_DATA: ChecklistCategory[] = [
     id: "cat-3",
     name: "Electronics",
     items: [
-      { id: "ele-1", label: "Phone charger", isPacked: true },
+      { id: "ele-1", label: "Phone charger", isPacked: false },
       { id: "ele-2", label: "Universal power adapter", isPacked: false },
       { id: "ele-3", label: "Earphone / headphones", isPacked: false },
-      { id: "ele-4", label: "Power bank", isPacked: false }, // Added to make total 12
+      { id: "ele-4", label: "Power bank", isPacked: false },
     ],
   },
 ];
