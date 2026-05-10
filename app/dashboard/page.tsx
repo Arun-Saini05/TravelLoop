@@ -1,5 +1,6 @@
 import { logout } from "@/app/actions/auth";
 import { requireSession } from "@/lib/session";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await requireSession();
@@ -29,9 +30,14 @@ export default async function DashboardPage() {
 
         <div className="mt-8 rounded-lg border border-dashed border-zinc-300 p-6">
           <p className="text-sm text-zinc-700">
-            Auth is now working. Next we can implement the trip creation and
-            itinerary flows.
+            Your account is ready. Start by planning your first trip.
           </p>
+          <Link
+            href="/trips/new"
+            className="mt-4 inline-flex rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          >
+            Plan A New Trip
+          </Link>
         </div>
       </section>
     </main>

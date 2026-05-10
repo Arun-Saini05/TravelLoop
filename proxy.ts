@@ -16,9 +16,10 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = token ? verifyJwt<ProxySessionClaims>(token) : null;
   const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/signup");
-  const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isProtectedRoute =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/trips");
 
-  if (isDashboardRoute && !session) {
+  if (isProtectedRoute && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -30,5 +31,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/signup", "/dashboard/:path*"],
+  matcher: ["/login", "/signup", "/dashboard/:path*", "/trips/:path*"],
 };
