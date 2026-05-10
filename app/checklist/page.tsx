@@ -53,7 +53,12 @@ export default function ChecklistPage() {
   const [categories, setCategories] = useState<ChecklistCategory[]>(INITIAL_DATA);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState("");
-  const [newItemCategory, setNewItemCategory] = useState(INITIAL_DATA[0].id);
+  // We'll safely fallback to the first category if categories array is not empty
+  const [newItemCategory, setNewItemCategory] = useState(INITIAL_DATA[0]?.id || "");
+
+  // Category addition state
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Toggle item packed status
   const toggleItem = (categoryId: string, itemId: string) => {
@@ -68,10 +73,27 @@ export default function ChecklistPage() {
     }));
   };
 
+  // Remove item
+  const handleRemoveItem = (categoryId: string, itemId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCategories(prev => prev.map(cat => {
+      if (cat.id !== categoryId) return cat;
+      return {
+        ...cat,
+        items: cat.items.filter(item => item.id !== itemId)
+      };
+    }));
+  };
+
+  // Remove category
+  const handleRemoveCategory = (categoryId: string) => {
+    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+  };
+
   // Add new item
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemLabel.trim()) return;
+    if (!newItemLabel.trim() || !newItemCategory) return;
 
     setCategories(prev => prev.map(cat => {
       if (cat.id !== newItemCategory) return cat;
@@ -90,6 +112,27 @@ export default function ChecklistPage() {
     
     setNewItemLabel("");
     setShowAddModal(false);
+  };
+
+  // Add new category
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+
+    const newCatId = `cat-${Date.now()}`;
+    setCategories(prev => [
+      ...prev,
+      {
+        id: newCatId,
+        name: newCategoryName.trim(),
+        items: []
+      }
+    ]);
+    
+    // Auto-select the newly created category if user wants to add an item next
+    setNewItemCategory(newCatId);
+    setNewCategoryName("");
+    setShowAddCategoryModal(false);
   };
 
   // Reset all items
@@ -176,7 +219,18 @@ export default function ChecklistPage() {
               <div key={cat.id} className={styles.categoryBlock}>
                 <div className={styles.categoryHeader}>
                   <h3 className={styles.categoryTitle}>{cat.name}</h3>
-                  <span className={styles.categoryCount}>{catPacked}/{catTotal}</span>
+                  <div className={styles.categoryActions}>
+                    <span className={styles.categoryCount}>{catPacked}/{catTotal}</span>
+                    <button 
+                      className={styles.deleteCategoryBtn}
+                      onClick={() => handleRemoveCategory(cat.id)}
+                      title="Remove category"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 
                 <div className={styles.itemList}>
@@ -192,19 +246,52 @@ export default function ChecklistPage() {
                         onChange={() => toggleItem(cat.id, item.id)}
                       />
                       <span className={styles.itemLabel}>{item.label}</span>
+                      <button 
+                        className={styles.deleteItemBtn}
+                        onClick={(e) => handleRemoveItem(cat.id, item.id, e)}
+                        title="Remove item"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
                     </label>
                   ))}
+                  {cat.items.length === 0 && (
+                    <div style={{ padding: "8px", color: "var(--tl-text-muted)", fontSize: "0.9rem", fontStyle: "italic" }}>
+                      No items in this category.
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
+          
+          <div className={styles.addCategoryContainer}>
+            <button 
+              className={styles.addCategoryBtn}
+              onClick={() => setShowAddCategoryModal(true)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add New Category
+            </button>
+          </div>
         </div>
 
         {/* Action Buttons */}
         <div className={styles.actionGroup}>
           <button 
             className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              if (categories.length === 0) {
+                alert("Please add a category first.");
+                return;
+              }
+              setNewItemCategory(categories[0].id);
+              setShowAddModal(true);
+            }}
           >
             + add item to checklist
           </button>
@@ -250,6 +337,7 @@ export default function ChecklistPage() {
                   className={styles.modalSelect}
                   value={newItemCategory}
                   onChange={(e) => setNewItemCategory(e.target.value)}
+                  required
                 >
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -270,6 +358,49 @@ export default function ChecklistPage() {
                   className={`${styles.modalBtn} ${styles.modalBtnAdd}`}
                 >
                   Add Item
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategoryModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Add New Category</h3>
+            </div>
+            
+            <form onSubmit={handleAddCategory} className={styles.modalForm}>
+              <div className={styles.modalField}>
+                <label htmlFor="categoryName" className={styles.modalLabel}>Category Name</label>
+                <input 
+                  id="categoryName"
+                  type="text" 
+                  autoFocus
+                  required
+                  placeholder="e.g., Toiletries, Snacks..." 
+                  className={styles.modalInput}
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.modalActions}>
+                <button 
+                  type="button" 
+                  className={`${styles.modalBtn} ${styles.modalBtnCancel}`}
+                  onClick={() => setShowAddCategoryModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={`${styles.modalBtn} ${styles.modalBtnAdd}`}
+                >
+                  Create Category
                 </button>
               </div>
             </form>
