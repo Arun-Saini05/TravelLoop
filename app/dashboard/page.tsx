@@ -1,8 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { logout } from '@/app/actions/auth';
 import { requireSession } from '@/lib/session';
 import { db } from '@/lib/db';
+import { UserMenu } from './user-menu';
 import styles from './Dashboard.module.css';
 
 export default async function DashboardPage() {
@@ -89,20 +89,7 @@ export default async function DashboardPage() {
           <span className={styles.logoText}>Traveloop</span>
         </Link>
 
-        <form action={logout}>
-          <button
-            type='submit'
-            title='Logout'
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <div className={styles.profileCircle}>{userInitial}</div>
-          </button>
-        </form>
+        <UserMenu userInitial={userInitial} username={session.username} />
       </nav>
 
       <main className={styles.container}>

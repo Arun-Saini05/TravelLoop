@@ -49,6 +49,65 @@
   text-transform: uppercase;
 }
 
+.userMenu {
+  position: relative;
+}
+
+.profileTrigger {
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.profileTrigger:focus-visible {
+  outline: 2px solid var(--tl-primary, #0f766e);
+  outline-offset: 3px;
+}
+
+.userMenuDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 170px;
+  background: var(--tl-surface, #ffffff);
+  border: 1px solid var(--tl-border, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: var(--tl-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+  padding: 6px;
+  z-index: 50;
+}
+
+.userMenuItem,
+.userMenuItemButton {
+  width: 100%;
+  display: block;
+  border: none;
+  background: transparent;
+  text-align: left;
+  text-decoration: none;
+  color: var(--tl-text, #0f172a);
+  font-size: 0.9rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.userMenuItem:hover,
+.userMenuItemButton:hover,
+.userMenuItem:focus-visible,
+.userMenuItemButton:focus-visible {
+  background: var(--tl-bg, #f8fafc);
+  outline: none;
+}
+
+.userMenuDivider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--tl-border, #e2e8f0);
+}
+
 /* Main Container */
 .container {
   max-width: 1200px;
