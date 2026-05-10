@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { signup, type AuthActionState } from "@/app/actions/auth";
+import styles from "./signup-form.module.css";
 
 const initialState: AuthActionState = {};
 
@@ -10,10 +10,10 @@ export function SignupForm() {
   const [state, formAction, pending] = useActionState(signup, initialState);
 
   return (
-    <form action={formAction} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label htmlFor="firstName" className="block text-sm font-medium">
+    <form action={formAction} className={styles.form}>
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="firstName" className={styles.label}>
             First name
           </label>
           <input
@@ -22,12 +22,13 @@ export function SignupForm() {
             type="text"
             required
             autoComplete="given-name"
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            placeholder="John"
+            className={styles.input}
           />
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="lastName" className="block text-sm font-medium">
+        <div className={styles.field}>
+          <label htmlFor="lastName" className={styles.label}>
             Last name
           </label>
           <input
@@ -35,13 +36,14 @@ export function SignupForm() {
             name="lastName"
             type="text"
             autoComplete="family-name"
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+            placeholder="Doe"
+            className={styles.input}
           />
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="username" className="block text-sm font-medium">
+      <div className={styles.field}>
+        <label htmlFor="username" className={styles.label}>
           Username
         </label>
         <input
@@ -50,13 +52,14 @@ export function SignupForm() {
           type="text"
           required
           autoComplete="username"
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+          placeholder="johndoe"
+          className={styles.input}
         />
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium">
-          Email
+      <div className={styles.field}>
+        <label htmlFor="email" className={styles.label}>
+          Email address
         </label>
         <input
           id="email"
@@ -64,13 +67,15 @@ export function SignupForm() {
           type="email"
           required
           autoComplete="email"
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+          placeholder="you@example.com"
+          className={styles.input}
         />
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium">
-          Password (min 8 characters)
+      <div className={styles.field}>
+        <label htmlFor="password" className={styles.label}>
+          Password
+          <span className={styles.hint}>min 8 characters</span>
         </label>
         <input
           id="password"
@@ -79,30 +84,32 @@ export function SignupForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+          placeholder="••••••••"
+          className={styles.input}
         />
       </div>
 
       {state.error ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className={styles.error}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
           {state.error}
-        </p>
+        </div>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-black px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
-      >
-        {pending ? "Creating account..." : "Create account"}
+      <button type="submit" disabled={pending} className={styles.submitBtn}>
+        {pending ? (
+          <>
+            <span className={styles.spinner} />
+            Creating account...
+          </>
+        ) : (
+          "Create account"
+        )}
       </button>
-
-      <p className="text-center text-sm text-zinc-600">
-        Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-zinc-900 underline">
-          Sign in
-        </Link>
-      </p>
     </form>
   );
 }

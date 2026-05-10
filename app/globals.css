@@ -57,6 +57,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Force light mode — prevent Tailwind auto dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    color-scheme: light;
+  }
+}
+
 /* ─────────────────────────────────────────────────────── */
 /*  GLOBAL RESETS                                          */
 /* ─────────────────────────────────────────────────────── */
