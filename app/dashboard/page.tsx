@@ -1,47 +1,80 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { requireSession } from '@/lib/session';
-import { db } from '@/lib/db';
-import { UserMenu } from './user-menu';
+import Image from "next/image";
+import Link from "next/link";
+import { requireSession } from "@/lib/session";
+import { db } from "@/lib/db";
+import { UserMenu } from "./user-menu";
 import {
   AppHeader,
   Badge,
   buttonClasses,
-  Card,
   EmptyState,
   FloatingActionBar,
   PageContainer,
   Section,
-} from '@/components/ui';
+} from "@/components/ui";
+
+const FALLBACK_REGIONS = [
+  { id: "fb-0", name: "Bali", subtitle: "Tropical escapes", image: "/images/dest-bali.png" },
+  { id: "fb-1", name: "Kyoto", subtitle: "Temples & tea", image: "/images/dest-kyoto.png" },
+  { id: "fb-2", name: "Paris", subtitle: "Art & cafés", image: "/images/dest-paris.png" },
+  {
+    id: "fb-3",
+    name: "Swiss Alps",
+    subtitle: "Peaks & trails",
+    image: "/images/dest-swiss-alps.png",
+  },
+  { id: "fb-4", name: "Maldives", subtitle: "Islands & reefs", image: "/images/dest-maldives.png" },
+] as const;
+
+function isPlacesPhotoRef(ref: string | null): ref is string {
+  return Boolean(
+    ref && ref.startsWith("places/") && ref.includes("/photos/") && ref.length < 512,
+  );
+}
+
+function regionImageSrc(photoRef: string | null, index: number): string {
+  if (isPlacesPhotoRef(photoRef)) {
+    return `/api/places/city-photo?ref=${encodeURIComponent(photoRef)}`;
+  }
+  return FALLBACK_REGIONS[index % FALLBACK_REGIONS.length].image;
+}
 
 export default async function DashboardPage() {
   const session = await requireSession();
 
   const trips = await db.trip.findMany({
     where: { ownerId: session.userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: 3,
   });
 
   const cities = await db.city.findMany({
-    orderBy: { popularityScore: 'desc' },
+    orderBy: { popularityScore: "desc" },
     take: 5,
+    select: {
+      id: true,
+      name: true,
+      photoRef: true,
+      country: { select: { name: true } },
+    },
   });
 
   const regions =
     cities.length > 0
-      ? cities.map((c) => ({
+      ? cities.map((c, i) => ({
           id: c.id,
           name: c.name,
-          image: c.photoRef || '/images/dest-bali.png',
+          subtitle: c.country.name,
+          imageSrc: regionImageSrc(c.photoRef, i),
+          usesPlacesPhoto: isPlacesPhotoRef(c.photoRef),
         }))
-      : [
-          { id: '1', name: 'Bali', image: '/images/dest-bali.png' },
-          { id: '2', name: 'Kyoto', image: '/images/dest-kyoto.png' },
-          { id: '3', name: 'Paris', image: '/images/dest-paris.png' },
-          { id: '4', name: 'Swiss Alps', image: '/images/dest-swiss-alps.png' },
-          { id: '5', name: 'Maldives', image: '/images/dest-maldives.png' },
-        ];
+      : FALLBACK_REGIONS.map((r) => ({
+          id: r.id,
+          name: r.name,
+          subtitle: r.subtitle,
+          imageSrc: r.image,
+          usesPlacesPhoto: false,
+        }));
 
   const userInitial = session.username
     ? session.username.charAt(0).toUpperCase()
@@ -126,17 +159,20 @@ export default async function DashboardPage() {
             {regions.map((region) => (
               <div
                 key={region.id}
-                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-zinc-200 shadow-sm"
+                className="group relative aspect-3/4 overflow-hidden rounded-2xl border border-zinc-200 shadow-sm"
               >
                 <Image
-                  src={region.image}
-                  alt={region.name}
+                  src={region.imageSrc}
+                  alt={`${region.name} — ${region.subtitle}`}
                   fill
                   className="object-cover transition group-hover:scale-105"
+                  sizes="(max-width:640px) 50vw, 20vw"
+                  unoptimized={region.usesPlacesPhoto}
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <p className="text-sm font-semibold text-white">{region.name}</p>
+                  <p className="text-[11px] font-medium text-white/80">{region.subtitle}</p>
                 </div>
               </div>
             ))}
