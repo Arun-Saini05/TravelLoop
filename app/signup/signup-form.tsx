@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { signup, type AuthActionState } from "@/app/actions/auth";
-import styles from "./signup-form.module.css";
+import { Button, Field, Input } from "@/components/ui";
 
 const initialState: AuthActionState = {};
 
@@ -10,74 +10,59 @@ export function SignupForm() {
   const [state, formAction, pending] = useActionState(signup, initialState);
 
   return (
-    <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
-        <div className={styles.field}>
-          <label htmlFor="firstName" className={styles.label}>
-            First name
-          </label>
-          <input
+    <form action={formAction} className="flex flex-col gap-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="firstName" label="First name" required>
+          <Input
             id="firstName"
             name="firstName"
             type="text"
             required
             autoComplete="given-name"
             placeholder="John"
-            className={styles.input}
           />
-        </div>
+        </Field>
 
-        <div className={styles.field}>
-          <label htmlFor="lastName" className={styles.label}>
-            Last name
-          </label>
-          <input
+        <Field id="lastName" label="Last name">
+          <Input
             id="lastName"
             name="lastName"
             type="text"
             autoComplete="family-name"
             placeholder="Doe"
-            className={styles.input}
           />
-        </div>
+        </Field>
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="username" className={styles.label}>
-          Username
-        </label>
-        <input
+      <Field id="username" label="Username" required>
+        <Input
           id="username"
           name="username"
           type="text"
           required
           autoComplete="username"
           placeholder="johndoe"
-          className={styles.input}
         />
-      </div>
+      </Field>
 
-      <div className={styles.field}>
-        <label htmlFor="email" className={styles.label}>
-          Email address
-        </label>
-        <input
+      <Field id="email" label="Email address" required>
+        <Input
           id="email"
           name="email"
           type="email"
           required
           autoComplete="email"
           placeholder="you@example.com"
-          className={styles.input}
         />
-      </div>
+      </Field>
 
-      <div className={styles.field}>
-        <label htmlFor="password" className={styles.label}>
-          Password
-          <span className={styles.hint}>min 8 characters</span>
-        </label>
-        <input
+      <Field
+        id="password"
+        label="Password"
+        required
+        helpText="Min 8 characters"
+      >
+        <Input
           id="password"
           name="password"
           type="password"
@@ -85,31 +70,39 @@ export function SignupForm() {
           minLength={8}
           autoComplete="new-password"
           placeholder="••••••••"
-          className={styles.input}
         />
-      </div>
+      </Field>
 
       {state.error ? (
-        <div className={styles.error}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
             <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
-          {state.error}
+          <span>{state.error}</span>
         </div>
       ) : null}
 
-      <button type="submit" disabled={pending} className={styles.submitBtn}>
-        {pending ? (
-          <>
-            <span className={styles.spinner} />
-            Creating account...
-          </>
-        ) : (
-          "Create account"
-        )}
-      </button>
+      <Button
+        type="submit"
+        variant="brand"
+        size="lg"
+        fullWidth
+        loading={pending}
+      >
+        {pending ? "Creating account…" : "Create account"}
+      </Button>
     </form>
   );
 }

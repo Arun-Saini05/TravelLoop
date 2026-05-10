@@ -21,20 +21,22 @@ export default async function ItineraryPage({ params }: PageProps) {
       name: true,
       startDate: true,
       endDate: true,
+      currency: true,
       stops: {
         orderBy: { sortOrder: "asc" },
         select: {
           id: true,
           title: true,
+          arrivalNotes: true,
           startDate: true,
           endDate: true,
+          sortOrder: true,
           city: {
             select: {
               id: true,
               name: true,
               countryCode: true,
-              latitude: true,
-              longitude: true,
+              country: { select: { name: true } },
             },
           },
           activities: {
@@ -42,19 +44,11 @@ export default async function ItineraryPage({ params }: PageProps) {
             select: {
               id: true,
               scheduledDate: true,
-              notes: true,
               estimatedCost: true,
-              activity: {
-                select: {
-                  id: true,
-                  name: true,
-                  type: true,
-                  description: true,
-                  googlePlaceId: true,
-                },
-              },
+              activity: { select: { name: true, type: true } },
             },
           },
+          _count: { select: { activities: true } },
         },
       },
     },
@@ -62,37 +56,47 @@ export default async function ItineraryPage({ params }: PageProps) {
 
   if (!trip) notFound();
 
-  const mapsApiKey =
-    process.env.GOOGLE_MAPS_API_KEY ??
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ??
-    "";
-
-  // Serialize Prisma Decimal / Date objects → plain JS before crossing the
-  // Server → Client Component boundary (Next.js requires plain objects).
   const serializedTrip = {
-    ...trip,
+    id: trip.id,
+    name: trip.name,
     startDate: trip.startDate.toISOString(),
     endDate: trip.endDate.toISOString(),
-    stops: trip.stops.map((stop) => ({
-      ...stop,
-      startDate: stop.startDate.toISOString(),
-      endDate: stop.endDate.toISOString(),
-      city: {
-        ...stop.city,
-        latitude: stop.city.latitude != null ? Number(stop.city.latitude) : null,
-        longitude: stop.city.longitude != null ? Number(stop.city.longitude) : null,
-      },
-      activities: stop.activities.map((sa) => ({
-        ...sa,
-        scheduledDate: sa.scheduledDate ? sa.scheduledDate.toISOString() : null,
-        estimatedCost: sa.estimatedCost != null ? Number(sa.estimatedCost) : null,
-      })),
-    })),
+    currency: trip.currency,
+    stops: trip.stops.map((stop) => {
+      const estimatedBudget = stop.activities.reduce(
+        (sum, a) => sum + (a.estimatedCost != null ? Number(a.estimatedCost) : 0),
+        0
+      );
+
+      return {
+        id: stop.id,
+        title: stop.title,
+        arrivalNotes: stop.arrivalNotes,
+        startDate: stop.startDate.toISOString(),
+        endDate: stop.endDate.toISOString(),
+        sortOrder: stop.sortOrder,
+        city: {
+          id: stop.city.id,
+          name: stop.city.name,
+          countryCode: stop.city.countryCode,
+          countryName: stop.city.country?.name ?? null,
+        },
+        activityCount: stop._count.activities,
+        estimatedBudget,
+        plannedActivities: stop.activities.map((a) => ({
+          id: a.id,
+          name: a.activity.name,
+          type: a.activity.type,
+          scheduledDate: a.scheduledDate ? a.scheduledDate.toISOString() : null,
+          estimatedCost: a.estimatedCost != null ? Number(a.estimatedCost) : null,
+        })),
+      };
+    }),
   };
 
   return (
-    <main className="min-h-screen bg-zinc-50">
-      <ItineraryBuilder trip={serializedTrip} mapsApiKey={mapsApiKey} />
+    <main className="min-h-screen bg-app">
+      <ItineraryBuilder trip={serializedTrip} />
     </main>
   );
 }

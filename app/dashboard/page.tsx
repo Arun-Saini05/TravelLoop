@@ -3,25 +3,31 @@ import Link from 'next/link';
 import { requireSession } from '@/lib/session';
 import { db } from '@/lib/db';
 import { UserMenu } from './user-menu';
-import styles from './Dashboard.module.css';
+import {
+  AppHeader,
+  Badge,
+  buttonClasses,
+  Card,
+  EmptyState,
+  FloatingActionBar,
+  PageContainer,
+  Section,
+} from '@/components/ui';
 
 export default async function DashboardPage() {
   const session = await requireSession();
 
-  // Fetch previous trips for the user
   const trips = await db.trip.findMany({
     where: { ownerId: session.userId },
     orderBy: { createdAt: 'desc' },
     take: 3,
   });
 
-  // Fetch top destinations (cities) or use fallback if none exist yet
   const cities = await db.city.findMany({
     orderBy: { popularityScore: 'desc' },
     take: 5,
   });
 
-  // Fallback regions if DB is empty (since they are populated on search)
   const regions =
     cities.length > 0
       ? cities.map((c) => ({
@@ -42,172 +48,181 @@ export default async function DashboardPage() {
     : 'U';
 
   return (
-    <div className={styles.page}>
-      {/* Top Navbar */}
-      <nav className={styles.navbar}>
-        <Link href='/' className={styles.logo}>
-          <svg
-            className={styles.logoIcon}
-            viewBox='0 0 32 32'
-            fill='none'
-            xmlns='http://www.w3.org/2000/svg'
-          >
-            <circle cx='16' cy='16' r='14' fill='url(#dashLogoGrad)' />
-            <path
-              d='M10 16C10 12.686 12.686 10 16 10C19.314 10 22 12.686 22 16'
-              stroke='white'
-              strokeWidth='2'
-              strokeLinecap='round'
-            />
-            <path
-              d='M8 16H24'
-              stroke='white'
-              strokeWidth='1.5'
-              strokeLinecap='round'
-            />
-            <path
-              d='M16 8V24'
-              stroke='white'
-              strokeWidth='1.5'
-              strokeLinecap='round'
-            />
-            <ellipse
-              cx='16'
-              cy='16'
-              rx='4'
-              ry='8'
-              stroke='white'
-              strokeWidth='1.5'
-            />
-            <defs>
-              <linearGradient id='dashLogoGrad' x1='0' y1='0' x2='32' y2='32'>
-                <stop stopColor='#14b8a6' />
-                <stop offset='1' stopColor='#06b6d4' />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span className={styles.logoText}>Traveloop</span>
-        </Link>
+    <main className="min-h-screen bg-app pb-28 sm:pb-32">
+      <AppHeader
+        width="wide"
+        actions={
+          <>
+            <Link
+              href="/dashboard/trips"
+              className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+            >
+              My Trips
+            </Link>
+            <Link
+              href="/profile"
+              className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+            >
+              Profile
+            </Link>
+            <UserMenu userInitial={userInitial} username={session.username} />
+          </>
+        }
+      />
 
-        <UserMenu userInitial={userInitial} username={session.username} />
-      </nav>
-
-      <main className={styles.container}>
-        {/* Banner Image */}
-        <div className={styles.banner}>
-          <Image
-            src='/images/hero-santorini.png'
-            alt='Banner Image'
-            fill
-            className={styles.bannerImage}
-            priority
-          />
-          <div className={styles.bannerOverlay}>
-            <h1 className={styles.bannerText}>Banner Image</h1>
+      <PageContainer width="wide">
+        {/* Hero banner */}
+        <section className="relative mb-8 overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-900 shadow-sm">
+          <div className="relative h-56 w-full sm:h-72">
+            <Image
+              src="/images/hero-santorini.png"
+              alt="Discover the world"
+              fill
+              priority
+              className="object-cover opacity-90"
+            />
+            <div className="absolute inset-0 bg-linear-to-tr from-black/70 via-black/30 to-transparent" />
           </div>
-        </div>
-
-        {/* Controls Bar */}
-        <div className={styles.controlsBar}>
-          <div className={styles.searchContainer}>
-            <input
-              type='text'
-              placeholder='Search destinations, trips...'
-              className={styles.searchInput}
-            />
+          <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10">
+            <Badge tone="brand" size="sm" className="w-fit bg-white/15 text-white ring-white/20 backdrop-blur">
+              Welcome back
+            </Badge>
+            <h1 className="mt-3 max-w-2xl text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
+              Where to next, {session.username}?
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-white/85 sm:text-base">
+              Pick a destination, build a stop-by-stop itinerary, and keep every detail in one place.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link
+                href="/trips/new"
+                className={buttonClasses({ variant: 'brand', size: 'lg' })}
+              >
+                + Plan a new trip
+              </Link>
+              <Link
+                href="/dashboard/trips"
+                className={buttonClasses({
+                  variant: 'secondary',
+                  size: 'lg',
+                  className:
+                    'bg-white/10 text-white border-white/30 hover:bg-white/20 hover:border-white/50',
+                })}
+              >
+                View my trips
+              </Link>
+            </div>
           </div>
-          <div className={styles.controlBtns}>
-            <button className={styles.controlBtn}>Group by</button>
-            <button className={styles.controlBtn}>Filter</button>
-            <button className={styles.controlBtn}>Sort by...</button>
-          </div>
-        </div>
+        </section>
 
-        {/* Top Regional Selections */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Top Regional Selections</h2>
-            <div className={styles.sectionLine}></div>
-          </div>
-
-          <div className={styles.regionsGrid}>
+        {/* Top regional selections */}
+        <Section
+          eyebrow="Inspiration"
+          title="Top regional selections"
+          description="Trending cities to spark your next itinerary."
+          className="mb-10"
+        >
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {regions.map((region) => (
-              <div key={region.id} className={styles.regionCard}>
+              <div
+                key={region.id}
+                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-zinc-200 shadow-sm"
+              >
                 <Image
                   src={region.image}
                   alt={region.name}
                   fill
-                  className={styles.regionImage}
+                  className="object-cover transition group-hover:scale-105"
                 />
-                <div className={styles.regionOverlay}>
-                  <span className={styles.regionName}>{region.name}</span>
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <p className="text-sm font-semibold text-white">{region.name}</p>
                 </div>
               </div>
             ))}
           </div>
-        </section>
+        </Section>
 
-        {/* Previous Trips */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Previous Trips</h2>
-            <div className={styles.sectionLine}></div>
-          </div>
-
+        {/* Recent trips */}
+        <Section
+          eyebrow="Your plans"
+          title="Recent trips"
+          description="Pick up where you left off."
+          action={
+            <Link
+              href="/dashboard/trips"
+              className={buttonClasses({ variant: 'ghost', size: 'sm' })}
+            >
+              See all →
+            </Link>
+          }
+        >
           {trips.length > 0 ? (
-            <div className={styles.tripsGrid}>
-              {trips.map((trip) => (
-                <div key={trip.id} className={styles.tripCard}>
-                  <div className={styles.tripImageContainer}>
-                    {trip.coverPhotoUrl && (
-                      <Image
-                        src={trip.coverPhotoUrl}
-                        alt={trip.name}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                      />
-                    )}
-                  </div>
-                  <div className={styles.tripInfo}>
-                    <h3 className={styles.tripTitle}>{trip.name}</h3>
-                    <p className={styles.tripDates}>
-                      {new Date(trip.startDate).toLocaleDateString()} -{' '}
-                      {new Date(trip.endDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {trips.map((trip) => {
+                const coverStyle = trip.coverPhotoUrl
+                  ? {
+                      backgroundImage: `linear-gradient(to top, rgba(15,23,42,0.6), rgba(15,23,42,0.15)), url(${trip.coverPhotoUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : {
+                      backgroundImage:
+                        'linear-gradient(135deg,#0f766e 0%,#14b8a6 60%,#06b6d4 100%)',
+                    };
+                return (
+                  <Link
+                    key={trip.id}
+                    href={`/trips/${trip.id}`}
+                    className="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-500 hover:shadow-md"
+                  >
+                    <div className="h-32 w-full" style={coverStyle} aria-hidden />
+                    <div className="p-4">
+                      <p className="truncate text-sm font-semibold text-zinc-900 group-hover:text-teal-700">
+                        {trip.name}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {new Date(trip.startDate).toLocaleDateString()} →{' '}
+                        {new Date(trip.endDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
-            <div className={styles.emptyState}>
-              <p>
-                You haven&apos;t planned any trips yet. Start your journey
-                today!
-              </p>
-            </div>
+            <EmptyState
+              icon="🧭"
+              title="No trips yet"
+              description="Start your journey today — plan a trip in under a minute."
+              action={
+                <Link
+                  href="/trips/new"
+                  className={buttonClasses({ variant: 'brand', size: 'md' })}
+                >
+                  + Plan a trip
+                </Link>
+              }
+            />
           )}
-        </section>
-      </main>
+        </Section>
+      </PageContainer>
 
-      {/* Floating Action Button */}
-      <div className={styles.fabContainer}>
-        <Link href='/trips/new' className={styles.fab}>
-          <svg
-            width='20'
-            height='20'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2.5'
-            strokeLinecap='round'
-            strokeLinejoin='round'
-          >
-            <line x1='12' y1='5' x2='12' y2='19'></line>
-            <line x1='5' y1='12' x2='19' y2='12'></line>
-          </svg>
-          Plan a trip
+      {/* Floating CTA */}
+      <FloatingActionBar>
+        <Link
+          href="/trips/new"
+          className={buttonClasses({ variant: 'primary', size: 'md' })}
+        >
+          + Plan a trip
         </Link>
-      </div>
-    </div>
+        <Link
+          href="/dashboard/trips"
+          className={buttonClasses({ variant: 'ghost', size: 'md' })}
+        >
+          My trips
+        </Link>
+      </FloatingActionBar>
+    </main>
   );
 }

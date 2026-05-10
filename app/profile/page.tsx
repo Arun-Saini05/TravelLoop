@@ -1,18 +1,29 @@
-import type { CSSProperties } from 'react';
-import Link from 'next/link';
-import type { TripStatus } from '@/app/generated/prisma/client';
-import { UserMenu } from '@/app/dashboard/user-menu';
-import { db } from '@/lib/db';
-import { requireSession } from '@/lib/session';
+import type { CSSProperties } from "react";
+import Link from "next/link";
+import type { TripStatus } from "@/app/generated/prisma/client";
+import { UserMenu } from "@/app/dashboard/user-menu";
+import { db } from "@/lib/db";
+import { requireSession } from "@/lib/session";
+import {
+  AppHeader,
+  Badge,
+  Button,
+  buttonClasses,
+  Card,
+  EmptyState,
+  PageContainer,
+  Section,
+  type BadgeTone,
+} from "@/components/ui";
 import { PhotoUpload } from './photo-upload';
 import { EditProfileModal } from './edit-profile-modal';
 import styles from './Profile.module.css';
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 
@@ -23,14 +34,25 @@ function formatDateRange(startDate: Date, endDate: Date): string {
 function toStatusLabel(status: TripStatus): string {
   return status
     .toLowerCase()
-    .split('_')
+    .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+    .join(" ");
 }
+
+const STATUS_TONE: Record<TripStatus, BadgeTone> = {
+  DRAFT: "neutral",
+  PLANNED: "info",
+  ONGOING: "brand",
+  COMPLETED: "success",
+  ARCHIVED: "neutral",
+};
 
 function getDurationDays(startDate: Date, endDate: Date): number {
   const dayMs = 1000 * 60 * 60 * 24;
-  return Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / dayMs) + 1);
+  return Math.max(
+    1,
+    Math.ceil((endDate.getTime() - startDate.getTime()) / dayMs) + 1
+  );
 }
 
 function getDestinationSummary(
@@ -43,7 +65,7 @@ function getDestinationSummary(
   const uniqueCities = Array.from(new Set(stops.map((stop) => stop.city.name)));
 
   if (uniqueCities.length === 0) {
-    return 'No destination added yet';
+    return "No destination added yet";
   }
 
   if (uniqueCities.length === 1) {
@@ -64,15 +86,71 @@ function isPreplannedTrip(
   },
   now: Date
 ): boolean {
-  if (trip.status === 'COMPLETED' || trip.status === 'ARCHIVED') {
+  if (trip.status === "COMPLETED" || trip.status === "ARCHIVED") {
     return false;
   }
 
-  if (trip.status === 'DRAFT' || trip.status === 'PLANNED' || trip.status === 'ONGOING') {
+  if (trip.status === "DRAFT" || trip.status === "PLANNED" || trip.status === "ONGOING") {
     return true;
   }
 
   return trip.endDate.getTime() >= now.getTime();
+}
+
+type TripCardData = {
+  id: string;
+  name: string;
+  status: TripStatus;
+  startDate: Date;
+  endDate: Date;
+  coverPhotoUrl: string | null;
+  stops: {
+    city: { name: string };
+  }[];
+};
+
+function TripGridCard({ trip }: { trip: TripCardData }) {
+  const coverStyle: CSSProperties | undefined = trip.coverPhotoUrl
+    ? {
+        backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.15)), url(${trip.coverPhotoUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : {
+        backgroundImage:
+          "linear-gradient(135deg, rgba(15, 118, 110, 0.85) 0%, rgba(20, 184, 166, 0.85) 100%)",
+      };
+
+  return (
+    <Card padded={false} className="overflow-hidden">
+      <div
+        className="relative flex h-32 items-end justify-start p-3"
+        style={coverStyle}
+      >
+        <Badge tone={STATUS_TONE[trip.status]} size="sm">
+          {toStatusLabel(trip.status)}
+        </Badge>
+      </div>
+      <div className="flex flex-col gap-1 p-4">
+        <h3 className="text-sm font-semibold tracking-tight text-zinc-900">
+          {trip.name}
+        </h3>
+        <p className="text-xs text-zinc-500">{getDestinationSummary(trip.stops)}</p>
+        <p className="text-xs text-zinc-500">
+          {formatDateRange(trip.startDate, trip.endDate)} ·{" "}
+          {getDurationDays(trip.startDate, trip.endDate)} days
+        </p>
+        <div className="mt-3">
+          <Link
+            href={`/trips/${trip.id}`}
+            className={buttonClasses({ variant: "primary", size: "sm" })}
+          >
+            View →
+          </Link>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export default async function ProfilePage() {
@@ -101,14 +179,10 @@ export default async function ProfilePage() {
         endDate: true,
         coverPhotoUrl: true,
         stops: {
-          orderBy: {
-            sortOrder: 'asc',
-          },
+          orderBy: { sortOrder: "asc" },
           select: {
             city: {
-              select: {
-                name: true,
-              },
+              select: { name: true },
             },
           },
         },
@@ -116,9 +190,10 @@ export default async function ProfilePage() {
     }),
   ]);
 
-  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || session.username;
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") || session.username;
   const userEmail = user?.email ?? session.email;
-  const avatarInitial = displayName.charAt(0).toUpperCase() || 'U';
+  const avatarInitial = displayName.charAt(0).toUpperCase() || "U";
   const memberSince = formatDate(user?.createdAt ?? now);
 
   const preplannedTrips = ownedTrips
@@ -130,56 +205,34 @@ export default async function ProfilePage() {
     .sort((a, b) => b.endDate.getTime() - a.endDate.getTime());
 
   return (
-    <div className={styles.page}>
-      <nav className={styles.navbar}>
-        <Link href='/' className={styles.logo}>
-          <svg
-            className={styles.logoIcon}
-            viewBox='0 0 32 32'
-            fill='none'
-            xmlns='http://www.w3.org/2000/svg'
-            aria-hidden='true'
-          >
-            <circle cx='16' cy='16' r='14' fill='url(#profileLogoGrad)' />
-            <path
-              d='M10 16C10 12.686 12.686 10 16 10C19.314 10 22 12.686 22 16'
-              stroke='white'
-              strokeWidth='2'
-              strokeLinecap='round'
-            />
-            <path d='M8 16H24' stroke='white' strokeWidth='1.5' strokeLinecap='round' />
-            <path d='M16 8V24' stroke='white' strokeWidth='1.5' strokeLinecap='round' />
-            <ellipse cx='16' cy='16' rx='4' ry='8' stroke='white' strokeWidth='1.5' />
-            <defs>
-              <linearGradient id='profileLogoGrad' x1='0' y1='0' x2='32' y2='32'>
-                <stop stopColor='#14b8a6' />
-                <stop offset='1' stopColor='#06b6d4' />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span className={styles.logoText}>Traveloop</span>
-        </Link>
+    <main className="min-h-screen bg-app">
+      <AppHeader
+        width="default"
+        crumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Profile" }]}
+        actions={<UserMenu userInitial={avatarInitial} username={session.username} />}
+      />
 
-        <UserMenu userInitial={avatarInitial} username={session.username} />
-      </nav>
-
-      <main className={styles.container}>
-        <section className={styles.profileCard} aria-labelledby='profile-overview-title'>
-          <header className={styles.profileCardHeader}>
+      <PageContainer width="default">
+        <Card padded className="mb-6 sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className={styles.profileEyebrow}>User profile</p>
-              <h1 id='profile-overview-title' className={styles.profileHeading}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-teal-700">
+                User profile
+              </p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
                 {displayName}
               </h1>
-              <p className={styles.profileSubtext}>
+              <p className="mt-1 max-w-md text-sm text-zinc-500">
                 Manage your details and quickly jump into planned adventures.
               </p>
             </div>
-
-            <Link href='/dashboard' className={styles.actionBtnGhost}>
-              Back to Dashboard
+            <Link
+              href="/dashboard"
+              className={buttonClasses({ variant: "secondary", size: "sm" })}
+            >
+              ← Back to Dashboard
             </Link>
-          </header>
+          </div>
 
           <div className={styles.profileLayout}>
             <PhotoUpload
@@ -188,37 +241,61 @@ export default async function ProfilePage() {
               avatarInitial={avatarInitial}
             />
 
-            <div className={styles.detailsPanel}>
-              <h2 className={styles.detailsHeading}>User details</h2>
-              <p className={styles.detailsDescription}>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
+                User details
+              </h2>
+              <p className="mt-1 text-xs text-zinc-500">
                 Keep your account details up to date and continue planning with confidence.
               </p>
 
-              <dl className={styles.detailGrid}>
-                <div className={styles.detailItem}>
-                  <dt className={styles.detailLabel}>Display name</dt>
-                  <dd className={styles.detailValue}>{displayName}</dd>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                    Display name
+                  </dt>
+                  <dd className="mt-0.5 text-sm font-medium text-zinc-900">
+                    {displayName}
+                  </dd>
                 </div>
-                <div className={styles.detailItem}>
-                  <dt className={styles.detailLabel}>Username</dt>
-                  <dd className={styles.detailValue}>{session.username}</dd>
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                    Username
+                  </dt>
+                  <dd className="mt-0.5 text-sm font-medium text-zinc-900">
+                    {session.username}
+                  </dd>
                 </div>
-                <div className={styles.detailItem}>
-                  <dt className={styles.detailLabel}>Email</dt>
-                  <dd className={styles.detailValue}>{userEmail}</dd>
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                    Email
+                  </dt>
+                  <dd className="mt-0.5 text-sm font-medium text-zinc-900">
+                    {userEmail}
+                  </dd>
                 </div>
-                <div className={styles.detailItem}>
-                  <dt className={styles.detailLabel}>Member since</dt>
-                  <dd className={styles.detailValue}>{memberSince}</dd>
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                    Member since
+                  </dt>
+                  <dd className="mt-0.5 text-sm font-medium text-zinc-900">
+                    {memberSince}
+                  </dd>
                 </div>
               </dl>
 
-              <div className={styles.actionsRow}>
-                <Link href='/dashboard/trips' className={styles.actionBtnPrimary}>
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/dashboard/trips"
+                  className={buttonClasses({ variant: "primary", size: "sm" })}
+                >
                   My Trips
                 </Link>
-                <Link href='/trips/new' className={styles.actionBtnSecondary}>
-                  Plan a Trip
+                <Link
+                  href="/trips/new"
+                  className={buttonClasses({ variant: "brand", size: "sm" })}
+                >
+                  + Plan a Trip
                 </Link>
                 <EditProfileModal 
                   initialFirstName={user?.firstName || null} 
@@ -229,108 +306,57 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
-        </section>
-
-        <section className={styles.section} aria-labelledby='preplanned-trips-title'>
-          <div className={styles.sectionHeader}>
-            <h2 id='preplanned-trips-title' className={styles.sectionTitle}>
-              Preplanned Trips
-            </h2>
-            <div className={styles.sectionLine}></div>
           </div>
+        </Card>
 
+        <Section
+          eyebrow="Upcoming"
+          title="Preplanned trips"
+          description="Trips you're actively planning or have coming up."
+          className="mb-8"
+        >
           {preplannedTrips.length > 0 ? (
-            <div className={styles.tripGrid}>
-              {preplannedTrips.map((trip) => {
-                const coverStyle: CSSProperties | undefined = trip.coverPhotoUrl
-                  ? {
-                      backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${trip.coverPhotoUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }
-                  : undefined;
-
-                return (
-                  <article key={trip.id} className={styles.tripCard}>
-                    <div className={styles.tripCover} style={coverStyle}>
-                      <span className={styles.tripCoverBadge} data-status={trip.status}>
-                        {toStatusLabel(trip.status)}
-                      </span>
-                    </div>
-                    <div className={styles.tripBody}>
-                      <h3 className={styles.tripName}>{trip.name}</h3>
-                      <p className={styles.tripMeta}>{getDestinationSummary(trip.stops)}</p>
-                      <p className={styles.tripMeta}>
-                        {formatDateRange(trip.startDate, trip.endDate)} ·{' '}
-                        {getDurationDays(trip.startDate, trip.endDate)} days
-                      </p>
-                      <div className={styles.tripFooter}>
-                        <Link href={`/dashboard/trips/${trip.id}`} className={styles.viewBtn}>
-                          View
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {preplannedTrips.map((trip) => (
+                <TripGridCard key={trip.id} trip={trip} />
+              ))}
             </div>
           ) : (
-            <div className={styles.emptyState}>
-              No upcoming or active trips yet. Start planning your next journey.
-            </div>
+            <EmptyState
+              icon="🧳"
+              title="No upcoming trips yet"
+              description="Start planning your next journey."
+            >
+              <Link
+                href="/trips/new"
+                className={buttonClasses({ variant: "brand", size: "sm" })}
+              >
+                + Plan a trip
+              </Link>
+            </EmptyState>
           )}
-        </section>
+        </Section>
 
-        <section className={styles.section} aria-labelledby='previous-trips-title'>
-          <div className={styles.sectionHeader}>
-            <h2 id='previous-trips-title' className={styles.sectionTitle}>
-              Previous Trips
-            </h2>
-            <div className={styles.sectionLine}></div>
-          </div>
-
+        <Section
+          eyebrow="Memories"
+          title="Previous trips"
+          description="Trips you've finished — relive the highlights."
+        >
           {previousTrips.length > 0 ? (
-            <div className={styles.tripGrid}>
-              {previousTrips.map((trip) => {
-                const coverStyle: CSSProperties | undefined = trip.coverPhotoUrl
-                  ? {
-                      backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${trip.coverPhotoUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }
-                  : undefined;
-
-                return (
-                  <article key={trip.id} className={styles.tripCard}>
-                    <div className={styles.tripCover} style={coverStyle}>
-                      <span className={styles.tripCoverBadge} data-status={trip.status}>
-                        {toStatusLabel(trip.status)}
-                      </span>
-                    </div>
-                    <div className={styles.tripBody}>
-                      <h3 className={styles.tripName}>{trip.name}</h3>
-                      <p className={styles.tripMeta}>{getDestinationSummary(trip.stops)}</p>
-                      <p className={styles.tripMeta}>
-                        {formatDateRange(trip.startDate, trip.endDate)} ·{' '}
-                        {getDurationDays(trip.startDate, trip.endDate)} days
-                      </p>
-                      <div className={styles.tripFooter}>
-                        <Link href={`/dashboard/trips/${trip.id}`} className={styles.viewBtn}>
-                          View
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {previousTrips.map((trip) => (
+                <TripGridCard key={trip.id} trip={trip} />
+              ))}
             </div>
           ) : (
-            <div className={styles.emptyState}>
-              Your completed and archived trips will appear here once you finish one.
-            </div>
+            <EmptyState
+              icon="📸"
+              title="No completed trips yet"
+              description="Your completed and archived trips will appear here once you finish one."
+            />
           )}
-        </section>
-      </main>
-    </div>
+        </Section>
+      </PageContainer>
+    </main>
   );
 }

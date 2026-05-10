@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/session";
+import { googlePriceLevelEnumToInt } from "@/lib/pricing";
 
 const GOOGLE_PLACES_BASE_URL = "https://places.googleapis.com/v1";
 
@@ -9,9 +10,12 @@ export type ActivityResult = {
   category: string | null;
   address: string | null;
   rating: number | null;
+  userRatingCount: number | null;
   photoRef: string | null;
   lat: number | null;
   lng: number | null;
+  /** Google `priceLevel` mapped to 0..4 (null = unknown). */
+  priceLevel: number | null;
 };
 
 function getMapsApiKey(): string {
@@ -24,8 +28,8 @@ function getMapsApiKey(): string {
   return key;
 }
 
-async function fetchPopularActivities(
-  cityName: string,
+async function fetchActivities(
+  textQuery: string,
   apiKey: string
 ): Promise<ActivityResult[]> {
   type SearchTextResponse = {
@@ -35,6 +39,8 @@ async function fetchPopularActivities(
       primaryTypeDisplayName?: { text?: string };
       formattedAddress?: string;
       rating?: number;
+      userRatingCount?: number;
+      priceLevel?: string;
       photos?: Array<{ name?: string }>;
       location?: { latitude?: number; longitude?: number };
     }>;
@@ -45,12 +51,21 @@ async function fetchPopularActivities(
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "places.id,places.displayName,places.primaryTypeDisplayName,places.formattedAddress,places.rating,places.photos,places.location",
+      "X-Goog-FieldMask": [
+        "places.id",
+        "places.displayName",
+        "places.primaryTypeDisplayName",
+        "places.formattedAddress",
+        "places.rating",
+        "places.userRatingCount",
+        "places.priceLevel",
+        "places.photos",
+        "places.location",
+      ].join(","),
     },
     body: JSON.stringify({
-      textQuery: `top tourist attractions and activities in ${cityName}`,
-      pageSize: 10,
+      textQuery,
+      pageSize: 15,
     }),
     cache: "no-store",
   });
@@ -74,9 +89,11 @@ async function fetchPopularActivities(
         category: place.primaryTypeDisplayName?.text ?? null,
         address: place.formattedAddress ?? null,
         rating: place.rating ?? null,
+        userRatingCount: place.userRatingCount ?? null,
         photoRef: place.photos?.[0]?.name ?? null,
         lat: place.location?.latitude ?? null,
         lng: place.location?.longitude ?? null,
+        priceLevel: googlePriceLevelEnumToInt(place.priceLevel ?? null),
       } satisfies ActivityResult;
     })
     .filter((v): v is ActivityResult => v !== null);
@@ -98,13 +115,20 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const city = url.searchParams.get("city")?.trim() ?? "";
+  const query = url.searchParams.get("query")?.trim() ?? "";
 
-  if (city.length < 2) {
+  if (!city) {
     return Response.json({ activities: [] });
   }
 
+  // If a free-text query is provided, scope it to the destination city; otherwise
+  // fall back to "top tourist attractions in <city>".
+  const textQuery = query
+    ? `${query} in ${city}`
+    : `top tourist attractions and activities in ${city}`;
+
   try {
-    const activities = await fetchPopularActivities(city, apiKey);
+    const activities = await fetchActivities(textQuery, apiKey);
     return Response.json({ activities });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch activities.";
