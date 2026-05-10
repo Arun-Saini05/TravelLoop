@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import Link from 'next/link';
 import { logout } from '@/app/actions/auth';
 import { requireSession } from '@/lib/session';
 import { db } from '@/lib/db';
@@ -17,7 +16,7 @@ export default async function DashboardPage() {
   });
 
   // Fetch top destinations (cities) or use fallback if none exist yet
-  let cities = await db.city.findMany({
+  const cities = await db.city.findMany({
     orderBy: { popularityScore: 'desc' },
     take: 5,
   });
@@ -43,61 +42,185 @@ export default async function DashboardPage() {
     : 'U';
 
   return (
-    <main className='min-h-screen bg-zinc-100 px-4 py-10 sm:px-6'>
-      <section className='mx-auto w-full max-w-4xl space-y-6'>
-        <header className='rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200'>
-          <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
-            <div>
-              <h1 className='text-2xl font-semibold text-zinc-900'>
-                Welcome, {session.username}
-              </h1>
-              <p className='mt-1 text-sm text-zinc-600'>
-                You are signed in as {session.email}
-              </p>
-            </div>
-
-            <form action={logout}>
-              <button
-                type='submit'
-                className='rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2'
-              >
-                Logout
-              </button>
-            </form>
-          </div>
-        </header>
-
-        <section
-          aria-labelledby='dashboard-next-steps'
-          className='rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200'
-        >
-          <h2
-            id='dashboard-next-steps'
-            className='text-lg font-semibold text-zinc-900'
+    <div className={styles.page}>
+      {/* Top Navbar */}
+      <nav className={styles.navbar}>
+        <Link href='/' className={styles.logo}>
+          <svg
+            className={styles.logoIcon}
+            viewBox='0 0 32 32'
+            fill='none'
+            xmlns='http://www.w3.org/2000/svg'
           >
-            Continue planning
-          </h2>
-          <p className='mt-2 text-sm text-zinc-600'>
-            View all your current trips, track progress, and jump back into
-            planning.
-          </p>
+            <circle cx='16' cy='16' r='14' fill='url(#dashLogoGrad)' />
+            <path
+              d='M10 16C10 12.686 12.686 10 16 10C19.314 10 22 12.686 22 16'
+              stroke='white'
+              strokeWidth='2'
+              strokeLinecap='round'
+            />
+            <path
+              d='M8 16H24'
+              stroke='white'
+              strokeWidth='1.5'
+              strokeLinecap='round'
+            />
+            <path
+              d='M16 8V24'
+              stroke='white'
+              strokeWidth='1.5'
+              strokeLinecap='round'
+            />
+            <ellipse
+              cx='16'
+              cy='16'
+              rx='4'
+              ry='8'
+              stroke='white'
+              strokeWidth='1.5'
+            />
+            <defs>
+              <linearGradient id='dashLogoGrad' x1='0' y1='0' x2='32' y2='32'>
+                <stop stopColor='#14b8a6' />
+                <stop offset='1' stopColor='#06b6d4' />
+              </linearGradient>
+            </defs>
+          </svg>
+          <span className={styles.logoText}>Traveloop</span>
+        </Link>
 
-          <div className='mt-5 flex flex-wrap gap-3'>
-            <Link
-              href='/dashboard/trips'
-              className='inline-flex items-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2'
-            >
-              Go to My Trips
-            </Link>
-            <Link
-              href='/dashboard/trips/new'
-              className='inline-flex items-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2'
-            >
-              Create New Trip
-            </Link>
+        <form action={logout}>
+          <button
+            type='submit'
+            title='Logout'
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <div className={styles.profileCircle}>{userInitial}</div>
+          </button>
+        </form>
+      </nav>
+
+      <main className={styles.container}>
+        {/* Banner Image */}
+        <div className={styles.banner}>
+          <Image
+            src='/images/hero-santorini.png'
+            alt='Banner Image'
+            fill
+            className={styles.bannerImage}
+            priority
+          />
+          <div className={styles.bannerOverlay}>
+            <h1 className={styles.bannerText}>Banner Image</h1>
+          </div>
+        </div>
+
+        {/* Controls Bar */}
+        <div className={styles.controlsBar}>
+          <div className={styles.searchContainer}>
+            <input
+              type='text'
+              placeholder='Search destinations, trips...'
+              className={styles.searchInput}
+            />
+          </div>
+          <div className={styles.controlBtns}>
+            <button className={styles.controlBtn}>Group by</button>
+            <button className={styles.controlBtn}>Filter</button>
+            <button className={styles.controlBtn}>Sort by...</button>
+          </div>
+        </div>
+
+        {/* Top Regional Selections */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Top Regional Selections</h2>
+            <div className={styles.sectionLine}></div>
+          </div>
+
+          <div className={styles.regionsGrid}>
+            {regions.map((region) => (
+              <div key={region.id} className={styles.regionCard}>
+                <Image
+                  src={region.image}
+                  alt={region.name}
+                  fill
+                  className={styles.regionImage}
+                />
+                <div className={styles.regionOverlay}>
+                  <span className={styles.regionName}>{region.name}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
-      </section>
-    </main>
+
+        {/* Previous Trips */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Previous Trips</h2>
+            <div className={styles.sectionLine}></div>
+          </div>
+
+          {trips.length > 0 ? (
+            <div className={styles.tripsGrid}>
+              {trips.map((trip) => (
+                <div key={trip.id} className={styles.tripCard}>
+                  <div className={styles.tripImageContainer}>
+                    {trip.coverPhotoUrl && (
+                      <Image
+                        src={trip.coverPhotoUrl}
+                        alt={trip.name}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                      />
+                    )}
+                  </div>
+                  <div className={styles.tripInfo}>
+                    <h3 className={styles.tripTitle}>{trip.name}</h3>
+                    <p className={styles.tripDates}>
+                      {new Date(trip.startDate).toLocaleDateString()} -{' '}
+                      {new Date(trip.endDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.emptyState}>
+              <p>
+                You haven&apos;t planned any trips yet. Start your journey
+                today!
+              </p>
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* Floating Action Button */}
+      <div className={styles.fabContainer}>
+        <button className={styles.fab}>
+          <svg
+            width='20'
+            height='20'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2.5'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          >
+            <line x1='12' y1='5' x2='12' y2='19'></line>
+            <line x1='5' y1='12' x2='19' y2='12'></line>
+          </svg>
+          Plan a trip
+        </button>
+      </div>
+    </div>
   );
 }
