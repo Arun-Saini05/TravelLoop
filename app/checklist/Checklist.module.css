@@ -201,6 +201,15 @@
   gap: 12px;
   padding: 8px;
   cursor: pointer;
+  border-radius: var(--tl-radius-sm, 8px);
+}
+
+.itemRow:hover {
+  background-color: var(--tl-bg, #f8fafc);
+}
+
+.itemRow:hover .deleteItemBtn {
+  opacity: 1;
 }
 
 .itemCheckbox {
@@ -213,6 +222,7 @@
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .itemCheckbox:checked {
@@ -237,11 +247,84 @@
   color: var(--tl-text, #0f172a);
   transition: color 0.2s;
   user-select: none;
+  flex: 1;
 }
 
 .itemRow.packed .itemLabel {
   text-decoration: line-through;
   color: var(--tl-text-muted, #94a3b8);
+}
+
+.deleteItemBtn {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--tl-text-muted, #94a3b8);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteItemBtn:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.categoryActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.deleteCategoryBtn {
+  background: none;
+  border: none;
+  color: var(--tl-text-muted, #94a3b8);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteCategoryBtn:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.addCategoryContainer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.addCategoryBtn {
+  background: none;
+  border: 1px dashed var(--tl-border, #e2e8f0);
+  border-radius: var(--tl-radius-md, 12px);
+  color: var(--tl-text-secondary, #475569);
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.addCategoryBtn:hover {
+  border-color: var(--tl-primary, #0f766e);
+  color: var(--tl-primary, #0f766e);
+  background-color: var(--tl-bg, #f8fafc);
 }
 
 /* Action Buttons */
