@@ -9,7 +9,7 @@
 *   **Interactive Itinerary Builder:** Plan your trips day by day, city by city.
 *   **Dynamic Packing Checklist:** Stay organized with a fully interactive packing checklist linked directly to your active trips.
 *   **Profile Management:** Update your details and instantly preview your locally-saved profile photo avatars.
-*   **Budgeting (Upcoming):** Track travel expenses across different categories (flights, meals, activities).
+*   **Budgeting:** Track travel expenses across different categories (flights, meals, activities).
 *   **Community:** Share your best trip moments and engage with others' experiences.
 
 ---
