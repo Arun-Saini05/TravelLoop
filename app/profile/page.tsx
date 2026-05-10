@@ -5,6 +5,8 @@ import { UserMenu } from '@/app/dashboard/user-menu';
 import { db } from '@/lib/db';
 import { requireSession } from '@/lib/session';
 import styles from './Profile.module.css';
+import { ProfileAvatarClient } from './ProfileAvatarClient';
+import { EditProfileModal } from './EditProfileModal';
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -180,20 +182,11 @@ export default async function ProfilePage() {
           </header>
 
           <div className={styles.profileLayout}>
-            <div className={styles.avatarWrap}>
-              {user?.profilePhotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.profilePhotoUrl}
-                  alt={`${displayName} profile photo`}
-                  className={styles.avatarImage}
-                />
-              ) : (
-                <span className={styles.avatarFallback} aria-hidden='true'>
-                  {avatarInitial}
-                </span>
-              )}
-            </div>
+            <ProfileAvatarClient 
+              initialPhotoUrl={user?.profilePhotoUrl} 
+              avatarInitial={avatarInitial} 
+              displayName={displayName} 
+            />
 
             <div className={styles.detailsPanel}>
               <h2 className={styles.detailsHeading}>User details</h2>
@@ -227,15 +220,11 @@ export default async function ProfilePage() {
                 <Link href='/trips/new' className={styles.actionBtnSecondary}>
                   Plan a Trip
                 </Link>
-                <button
-                  type='button'
-                  className={styles.actionBtnGhost}
-                  aria-disabled='true'
-                  disabled
-                  title='Profile editing will be available soon'
-                >
-                  Edit Details (Soon)
-                </button>
+                <EditProfileModal 
+                  initialFirstName={user?.firstName || null} 
+                  initialLastName={user?.lastName || null} 
+                  initialEmail={userEmail}
+                />
               </div>
             </div>
           </div>
