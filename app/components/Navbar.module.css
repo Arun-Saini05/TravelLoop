@@ -1,0 +1,136 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  transition: var(--tl-transition);
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  transition: var(--tl-transition);
+}
+
+.logo:hover {
+  transform: scale(1.02);
+}
+
+.logoIcon {
+  width: 36px;
+  height: 36px;
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+/* Nav Links */
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.navLink {
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--tl-text-secondary);
+  transition: var(--tl-transition);
+  position: relative;
+  padding: 4px 0;
+}
+
+.navLink::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--tl-primary);
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+
+.navLink:hover {
+  color: var(--tl-primary);
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+/* Auth Button */
+.authButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+  border: none;
+  border-radius: var(--tl-radius-full);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--tl-transition);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
+  white-space: nowrap;
+}
+
+.authButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.45);
+  background: linear-gradient(135deg, #0d5c56 0%, #0f766e 100%);
+}
+
+.authButton:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navLinks {
+    display: none;
+  }
+
+  .container {
+    height: 64px;
+  }
+
+  .logoText {
+    font-size: 1.25rem;
+  }
+
+  .authButton {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+  }
+}

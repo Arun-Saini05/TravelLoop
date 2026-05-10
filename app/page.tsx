@@ -1,12 +1,23 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
+import DestinationsSection from './components/DestinationsSection';
+import FeaturesSection from './components/FeaturesSection';
+import HowItWorks from './components/HowItWorks';
+import CTASection from './components/CTASection';
+import Footer from './components/Footer';
 
-export default async function Home() {
-  const session = await getSession();
-
-  if (session) {
-    redirect("/dashboard");
-  }
-
-  redirect("/login");
+export default function Home() {
+  return (
+    <>
+      <Navbar />
+      <main>
+        <HeroSection />
+        <DestinationsSection />
+        <FeaturesSection />
+        <HowItWorks />
+        <CTASection />
+      </main>
+      <Footer />
+    </>
+  );
 }
