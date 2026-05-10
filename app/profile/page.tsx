@@ -4,6 +4,7 @@ import type { TripStatus } from '@/app/generated/prisma/client';
 import { UserMenu } from '@/app/dashboard/user-menu';
 import { db } from '@/lib/db';
 import { requireSession } from '@/lib/session';
+import { PhotoUpload } from './photo-upload';
 import styles from './Profile.module.css';
 
 function formatDate(date: Date): string {
@@ -180,20 +181,11 @@ export default async function ProfilePage() {
           </header>
 
           <div className={styles.profileLayout}>
-            <div className={styles.avatarWrap}>
-              {user?.profilePhotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.profilePhotoUrl}
-                  alt={`${displayName} profile photo`}
-                  className={styles.avatarImage}
-                />
-              ) : (
-                <span className={styles.avatarFallback} aria-hidden='true'>
-                  {avatarInitial}
-                </span>
-              )}
-            </div>
+            <PhotoUpload
+              currentPhotoUrl={user?.profilePhotoUrl}
+              displayName={displayName}
+              avatarInitial={avatarInitial}
+            />
 
             <div className={styles.detailsPanel}>
               <h2 className={styles.detailsHeading}>User details</h2>
