@@ -1,0 +1,170 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Left: Image Panel ──────────────────────────────── */
+.imagePanel {
+  position: relative;
+  flex: 1;
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .imagePanel {
+    display: block;
+  }
+}
+
+.imageOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.35) 0%,
+    rgba(15, 23, 42, 0.65) 60%,
+    rgba(15, 23, 42, 0.85) 100%
+  );
+  z-index: 1;
+}
+
+.imageContent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 48px;
+  z-index: 2;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-bottom: 32px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.logoText {
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #14b8a6, #06b6d4);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.quote {
+  font-size: 1.35rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  font-style: italic;
+  max-width: 420px;
+  margin: 0;
+}
+
+.quoteAuthor {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* ── Right: Form Panel ──────────────────────────────── */
+.formPanel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--tl-bg, #f8fafc);
+  min-height: 100vh;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 480px;
+}
+
+.formHeader {
+  margin-bottom: 32px;
+}
+
+.heading {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--tl-text, #0f172a);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: var(--tl-text-secondary, #475569);
+  line-height: 1.5;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--tl-border, #e2e8f0);
+}
+
+.divider span {
+  font-size: 0.8rem;
+  color: var(--tl-text-muted, #94a3b8);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Switch Link */
+.switchText {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--tl-text-secondary, #475569);
+}
+
+.switchLink {
+  color: var(--tl-primary, #0f766e);
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.switchLink:hover {
+  color: var(--tl-primary-light, #14b8a6);
+  text-decoration: underline;
+}
+
+/* Back Link */
+.backLink {
+  display: block;
+  text-align: center;
+  margin-top: 24px;
+  font-size: 0.85rem;
+  color: var(--tl-text-muted, #94a3b8);
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.backLink:hover {
+  color: var(--tl-primary, #0f766e);
+}

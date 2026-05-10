@@ -97,7 +97,8 @@
   color: #ffffff;
   background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
   border: none;
-  border-radius: var(--tl-radius-full);
+  border-radius: 9999px;
+  border-radius: var(--tl-radius-full, 9999px);
   text-decoration: none;
   cursor: pointer;
   transition: var(--tl-transition);
