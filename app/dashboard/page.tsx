@@ -204,7 +204,7 @@ export default async function DashboardPage() {
 
       {/* Floating Action Button */}
       <div className={styles.fabContainer}>
-        <button className={styles.fab}>
+        <Link href='/trips/new' className={styles.fab}>
           <svg
             width='20'
             height='20'
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
             <line x1='5' y1='12' x2='19' y2='12'></line>
           </svg>
           Plan a trip
-        </button>
+        </Link>
       </div>
     </div>
   );
