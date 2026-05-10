@@ -1,10 +1,10 @@
-{
+    {
   "name": "traveloop",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
